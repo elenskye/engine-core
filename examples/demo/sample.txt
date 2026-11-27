@@ -1,0 +1,6 @@
+一行样本文字
+第二行写着認知模型，
+第三行接着讲认知
+
+The model uses self-
+attention in English.

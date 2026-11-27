@@ -1,20 +1,30 @@
 # HANDOFF
 
-更新：2026-11-27 · v0.1.0 · 本机 Claude 建仓库、写计划
+更新于 2026-11-27。**v0.2.0 已审核、提交并打 tag `v0.2.0`**（本机，等站主 push）。各引擎可以照 `CHANGELOG.md`「各引擎怎么接」钉它。
 
-## 现在在哪
+## 本版
 
-只有计划和骨架：`CLAUDE.md`（开发准则照抄总仓库 `GUIDE.md`）、`docs/design.md`（工具清单格式、调用、覆盖和导出、命令行、find、取消）、`ROADMAP.md`（v0.2.0 的 Phase 表）、两份决定。`src/lib.rs` 只有版本常量。
+Codex 实施 Phase 1–5，本机 Claude 审核后改了调用流程、错误、例子、find 的归一化和按词命中，详见 `ROADMAP.md`「v0.2.0」和 `decisions/0004`、`0007`。接口以 `docs/design.md` 为准。
 
-## 测试
+## 验证
 
-- `./scripts/check.sh`：通过（`cargo fmt --check`、`cargo test`、`cargo clippy --all-targets -D warnings`；只有版本测试）。
+- `./scripts/check.sh`：通过（fmt、31 项测试、Clippy `-D warnings`）。
+- `cargo check --locked --target aarch64-unknown-linux-gnu --all-targets`：通过。Linux 上原生跑测试没做。
+- 命令行实跑 demo：`tools`、`describe`、`call` 免费工具出结果；`demo_meter` 不加 `--yes` 只报价、退出码 3；加 `--yes` 和模拟密钥执行并带用量；参数错退出码 2。同样的流程在 `examples/demo/tests.rs` 里自动测。
+- 真实文件核对（`local/review/`，不进 Git，用法见那里的 README）：engine-pdf 读出 38 份真实论文和杂志（Zotero 副本 28 份 + engine-pdf `local/pdf` 10 份，891 页，268 万字）和 8 页扫描件（本机 OCR）。从原文随机截 2,413 个片段：原样去找全部在原处整句命中；「模型照着打」的写法失败 5 处（0.2%），都是核对程序把全角数字当成中文造成的假失败；扫描件 51 个片段 0 失败。891 页归一化共约 0.1 秒（release）。
+- 没做：模型 API 实调（本库不联网）；各引擎的实际接入。
 
-## 等你
+## 已知问题、留给以后
 
-1. GitHub 上建 `elenskye/engine-core`，照对话里给的命令加远端、push。
-2. 看 `ROADMAP.md` 的 v0.2.0 计划，说开工。
+- 按词找只在一个单元里找；engine-excel 想要「整句按一格、按词按一行」，到时加（`ROADMAP.md` v0.x）。
+- 整句是子串匹配，不要求词边界（和阅读器的查找一样）：搜 `cat` 会命中 `concatenate`。各引擎若要整词，到时再加选项。
+- 「换行变空格」的查法（`over- interpreting`）找不到：行尾连字符后跟空格（不是换行）不拼词，免得把 `pre- and post-` 拼错。
 
-## 下一轮
+## 等站主
 
-站主说开工后，让 Codex 做 v0.2.0 Phase 1：「读 engine-core 的 AGENTS.md、HANDOFF.md、ROADMAP.md『v0.2.0』、docs/design.md §1；做 Phase 1（工具清单类型、自检、参数校验和默认值、demo 假引擎的清单），做完写 HANDOFF」。做完回到本机 Claude 审核。engine-web、engine-word、engine-txt 的工具包和 find 都等本库 v0.2.0 的 tag，越早发越好。
+- push 提交和 tag：`git push origin main --tags`（在 `engine-core/` 里）。
+- 看一眼 `decisions/0007` 后三条：按词时每个词各算一处、中日文旁的空白、横线和软连字符，是审核时依真实论文改的，改了站主 0007 原定的命中形状。不同意就说，push 之前还能改。
+
+## 下一步
+
+各引擎在自己的仓库钉 `v0.2.0` 做工具包和 find：engine-pdf v0.7 Phase 2、engine-web Phase 4、engine-word / engine-txt / engine-excel Phase 5。本库等它们提需求再出 v0.x。

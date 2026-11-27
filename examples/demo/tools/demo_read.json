@@ -1,0 +1,78 @@
+{
+  "name": "demo_read",
+  "title": "读取样本文本",
+  "description": "读取本机 UTF-8 文本，返回内容和字节数。可将内容作为附件交回；读不到文件时请检查路径或权限。",
+  "params": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "UTF-8 文本的路径"
+      },
+      "attachment": {
+        "type": "string",
+        "enum": [
+          "none",
+          "bytes",
+          "temp_file"
+        ],
+        "default": "none"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  },
+  "result": "文件的文字和字节数。可附文本副本。",
+  "result_schema": {
+    "type": "object",
+    "properties": {
+      "bytes": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "required": [
+      "bytes"
+    ]
+  },
+  "errors": [
+    {
+      "kind": "not_text",
+      "message": "文件不是 UTF-8 文本。",
+      "hint": "请换一份 UTF-8 文本。",
+      "retry": false
+    }
+  ],
+  "cost": {
+    "kind": "local"
+  },
+  "confirm": {
+    "kind": "never"
+  },
+  "effects": {
+    "network": false,
+    "writes": "new_bytes"
+  },
+  "examples": [
+    {
+      "args": {
+        "file": "examples/demo/sample.txt"
+      },
+      "expect": {
+        "contains": "一行样本文字",
+        "data": {
+          "bytes": 119
+        }
+      }
+    },
+    {
+      "args": {
+        "file": "examples/demo/missing.txt"
+      },
+      "expect": {
+        "error": "file"
+      }
+    }
+  ]
+}

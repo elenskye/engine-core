@@ -117,7 +117,7 @@ engine-core 是 personal-engine-studio 各引擎共用的小库（独立 Rust �
 
 - **用的人是别的引擎**：「一」里的工具包和 find 对本库来说是「给别的引擎提供格式和骨架」。本库不写具体格式的工具；测试用 `examples/demo` 里的假引擎把全流程走一遍。
 - **公共接口就是各引擎的地基**：工具清单的字段、调用上下文、命中格式一改，所有引擎都要跟着改。改公共接口先在 `docs/design.md` 写清，本机 Claude 审过再做；`CHANGELOG.md` 写明各引擎升级要改什么。1.0 和 engine-pdf 1.0 同时冻结，之后只加不改。
-- **依赖要轻**：每个引擎都会带上本库的依赖。只用纯 Rust 的库，不引 HTTP、不引异步运行时、不引 Mac 框架。现有计划：`serde`、`serde_json`、`zeroize`、`unicode-normalization`、一份简繁转换表（Phase 3 选定，核对体积和许可证）。
+- **依赖要轻**：每个引擎都会带上本库的依赖。只用纯 Rust 的库，不引 HTTP、不引异步运行时、不引 Mac 框架。现有的见 `THIRD_PARTY.md`。
 - **平台**：macOS 和 Linux 都要编译、测试都要过（这台 Mac 装的是 `aarch64-unknown-linux-gnu`：`cargo check --target aarch64-unknown-linux-gnu --all-targets` 至少要过）。
 - **检查**：`./scripts/check.sh`（`cargo fmt --check`、`cargo test`、`cargo clippy --all-targets -D warnings`）。
 - **文档表**：

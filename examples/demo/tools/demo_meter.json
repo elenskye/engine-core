@@ -1,0 +1,79 @@
+{
+  "name": "demo_meter",
+  "title": "模拟按项计费",
+  "description": "模拟处理若干项，交回数量和估算用量。正金额时需要确认，实际执行使用 DEMO_KEY，整个示例只在本机运行。",
+  "params": {
+    "type": "object",
+    "properties": {
+      "units": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "default": 1
+      },
+      "fail": {
+        "type": "boolean",
+        "default": false
+      }
+    }
+  },
+  "result": "处理的数量和估算用量。",
+  "result_schema": {
+    "type": "object",
+    "properties": {
+      "units": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "required": [
+      "units"
+    ]
+  },
+  "errors": [],
+  "cost": {
+    "kind": "metered",
+    "service": "demo",
+    "unit": "项",
+    "usd_per_unit": 0.01
+  },
+  "confirm": {
+    "kind": "always"
+  },
+  "effects": {
+    "network": false,
+    "writes": "none"
+  },
+  "examples": [
+    {
+      "args": {
+        "units": 2
+      },
+      "expect": {
+        "contains": "处理了 2 项",
+        "data": {
+          "units": 2
+        }
+      }
+    },
+    {
+      "args": {
+        "units": 0
+      },
+      "expect": {
+        "data": {
+          "units": 0
+        }
+      }
+    },
+    {
+      "args": {
+        "units": 3,
+        "fail": true
+      },
+      "expect": {
+        "error": "service"
+      }
+    }
+  ]
+}

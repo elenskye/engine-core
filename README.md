@@ -1,24 +1,32 @@
 # engine-core
 
-personal-engine-studio 各引擎共用的小库（纯 Rust）：工具清单的格式、校验、覆盖和导出，按名字调用的入口，命令行骨架，find 的归一化、查询和命中类型，取消，错误和费用的约定。各引擎用它做「给 Agent 的工具包」和统一的 find。
-
-> 现在是 **v0.1.0**：只有计划和设计稿，还没有可用的接口。下一步 v0.2.0：工具包骨架 + find。进度见 `ROADMAP.md`，交接见 `HANDOFF.md`。
-
-## 各引擎怎么引用
-
-钉一个 tag：
+personal-engine-studio 各引擎共用的小库（纯 Rust，macOS、Linux 都能用）：工具清单的格式、自检、覆盖和导出，按名字调用（报价、确认、结果校验），命令行骨架，统一 find 的归一化、查询和命中，取消。它自己没有工具，各引擎钉它的 tag 来做「给 Agent 的工具包」和 `<短名>_find`。
 
 ```toml
 [dependencies]
 engine-core = { git = "https://github.com/elenskye/engine-core", tag = "v0.2.0" }
 ```
 
-升级改 tag，回退改回上一个。每版接口变化见 `CHANGELOG.md`。
+升级改 tag，回退改回上一个。接法见 [CHANGELOG](CHANGELOG.md#v020)，接口见 [设计稿](docs/design.md)，照着抄的样子见 [examples/demo](examples/demo/main.rs)。
 
-## 开发
+```rust
+use engine_core::find::{Finder, Query, Source};
+
+let page = "前認\n知後";
+let mut finder = Finder::new(&Query::new("认知"));
+finder.scan(page, Source::Text, |range| range);   // range：原文里的字节区间，引擎换成页码、行号……
+let hit = &finder.finish().hits[0];
+assert_eq!(&page[hit.location.clone()], "認\n知");
+```
+
+## 本机检查和试用
 
 ```bash
 ./scripts/check.sh
+cargo check --locked --target aarch64-unknown-linux-gnu --all-targets
+cargo run --example demo -- tools
+cargo run --example demo -- call demo_find '{"file":"examples/demo/sample.txt","query":"認知模型"}'
+cargo run --example demo -- call demo_meter '{"units":2}'
 ```
 
-规则见 `CLAUDE.md`（Codex 读 `AGENTS.md`，是同一份），设计见 `docs/design.md`，选型见 `docs/decisions/`。
+最后一条只报价（退出码 3）；加 `--yes` 并设 `ENGINE_KEY_DEMO_KEY=demo` 才模拟执行。规则见 [CLAUDE.md](CLAUDE.md)，现状见 [HANDOFF.md](HANDOFF.md)。

@@ -1,0 +1,139 @@
+{
+  "name": "demo_find",
+  "title": "在样本文本里找字",
+  "description": "在一份本机 UTF-8 文本里找一个词或一句话，交回每处的段号、行号和前后文。简繁、全角半角、行尾断词都能找到；整句找不到时按词找（几个词在同一段），并标出来。没找到就换个说法，或少几个词。",
+  "params": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "UTF-8 文本的路径"
+      },
+      "query": {
+        "type": "string",
+        "description": "要找的词或句子"
+      },
+      "max_hits": {
+        "type": "integer",
+        "default": 20,
+        "minimum": 0,
+        "maximum": 100,
+        "description": "最多交回几处；0 只计数"
+      },
+      "context": {
+        "type": "integer",
+        "default": 40,
+        "minimum": 0,
+        "maximum": 200,
+        "description": "前后各留多少字"
+      }
+    },
+    "required": [
+      "file",
+      "query"
+    ]
+  },
+  "result": "每处命中：段号和行号、命中处原样的文字、前后各若干字、整句还是按词（按词时每个词各算一处）；另给一共几处、是不是只列了前几处。",
+  "result_schema": {
+    "type": "object",
+    "properties": {
+      "hits": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        }
+      },
+      "total": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "truncated": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "hits",
+      "total",
+      "truncated"
+    ]
+  },
+  "errors": [
+    {
+      "kind": "not_text",
+      "message": "文件不是 UTF-8 文本。",
+      "hint": "请换一份 UTF-8 文本。",
+      "retry": false
+    }
+  ],
+  "cost": {
+    "kind": "local"
+  },
+  "confirm": {
+    "kind": "never"
+  },
+  "effects": {
+    "network": false,
+    "writes": "none"
+  },
+  "examples": [
+    {
+      "args": {
+        "file": "examples/demo/sample.txt",
+        "query": "认知模型"
+      },
+      "expect": {
+        "contains": "第 1 段第 2 行",
+        "data": {
+          "total": 1,
+          "truncated": false
+        }
+      }
+    },
+    {
+      "args": {
+        "file": "examples/demo/sample.txt",
+        "query": "self-attention"
+      },
+      "expect": {
+        "contains": "第 2 段第 5 行",
+        "data": {
+          "total": 1
+        }
+      }
+    },
+    {
+      "args": {
+        "file": "examples/demo/sample.txt",
+        "query": "English model"
+      },
+      "expect": {
+        "contains": "按词找到 2 处",
+        "data": {
+          "total": 2
+        }
+      }
+    },
+    {
+      "args": {
+        "file": "examples/demo/sample.txt",
+        "query": "认知",
+        "max_hits": 0
+      },
+      "expect": {
+        "data": {
+          "total": 2,
+          "truncated": true
+        }
+      }
+    },
+    {
+      "args": {
+        "file": "examples/demo/missing.txt",
+        "query": "认知"
+      },
+      "expect": {
+        "error": "file"
+      }
+    }
+  ]
+}

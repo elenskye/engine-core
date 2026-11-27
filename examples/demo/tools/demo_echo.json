@@ -1,0 +1,80 @@
+{
+  "name": "demo_echo",
+  "title": "回显文本",
+  "description": "回显一段文字，或将其中的 ASCII 字母转成大写。用来核对参数、默认值和返回内容。",
+  "params": {
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "要回显的文字"
+      },
+      "style": {
+        "type": "string",
+        "enum": [
+          "plain",
+          "upper"
+        ],
+        "default": "plain"
+      }
+    },
+    "required": [
+      "text"
+    ]
+  },
+  "result": "回显的文字，结构化结果包含 text。",
+  "result_schema": {
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "text"
+    ]
+  },
+  "errors": [],
+  "cost": {
+    "kind": "free"
+  },
+  "confirm": {
+    "kind": "never"
+  },
+  "effects": {
+    "network": false,
+    "writes": "none"
+  },
+  "examples": [
+    {
+      "args": {
+        "text": "Hello"
+      },
+      "expect": {
+        "contains": "Hello",
+        "data": {
+          "text": "Hello"
+        }
+      }
+    },
+    {
+      "args": {
+        "text": "Hello",
+        "style": "upper"
+      },
+      "expect": {
+        "data": {
+          "text": "HELLO"
+        }
+      }
+    },
+    {
+      "args": {
+        "text": 42
+      },
+      "expect": {
+        "error": "bad_args"
+      }
+    }
+  ]
+}
