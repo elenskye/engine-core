@@ -98,7 +98,7 @@ pub struct Override { description, defaults, limits, confirm, disabled }
 | --- | --- | --- |
 | 连字、全角半角、兼容字符 | NFKC | `ﬀ` → `ff`，`１２３` → `123`，康熙部首 → 常用字 |
 | 看不见的字符 | 软连字符、零宽字符、BOM 等（Unicode Default_Ignorable）去掉 | `arti\u{ad}cle` → `article` |
-| 英文的横线和断词 | 拉丁字母之间的连字符、横线去掉，中间可有一次换行（软连字符后的空白也算） | `infor-\nmation` → `information`；`self-\nattention`、`self-attention` → `selfattention` |
+| 英文的横线和断词 | 拉丁字母之间的连字符、横线去掉，中间可有一次换行；后面只有空格、没有换行的不拼（`all\u{ad} the`、`pre- and post-`） | `infor-\nmation` → `information`；`self-\nattention`、`self-attention` → `selfattention` |
 | 中日文旁的空白 | 汉字、假名、全角或中文标点任一侧的空白去掉 | `认\n知` → `认知`；`模型，\n认知` → `模型,认知`；`使用 Python` → `使用python` |
 | 其余空白 | 连续空白收成一个空格，去掉首尾 | |
 | 简繁 | 逐字按 OpenCC 表折到稳定的简体 | `認知` ↔ `认知` |

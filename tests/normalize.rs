@@ -16,7 +16,12 @@ fn folds_search_variants_without_merging_unrelated_text() {
             "arti\u{ad}cle dis\u{ad}trib\u{ad}uted",
             "article distributed",
         ),
-        ("Socia\u{ad} bleness", "sociableness"),
+        // 软连字符后跟空格是词间空格（Duke 出版社的期刊，2026-11-27 engine-pdf 审核）。
+        ("all\u{ad} obser\u{ad}va\u{ad}tions", "all observations"),
+        (
+            "between-\u{ad} and within-\u{ad}variation",
+            "between- and withinvariation",
+        ),
         (
             "cross-\u{ad}sectional t-\n\u{ad}tests",
             "crosssectional ttests",

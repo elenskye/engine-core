@@ -139,7 +139,8 @@ pub(super) fn fold(text: &str) -> Vec<Scalar> {
             continue;
         }
         // 拉丁字母之间的横线去掉，中间可以有一次换行：infor-\nmation、self-\nattention、
-        // self-attention 都折成一个词。软连字符后的空白也算换行，其他位置的软连字符直接去掉。
+        // self-attention 都折成一个词。横线后只有空格、没有换行时是词间空格（all\u{ad} the、
+        // pre- and post-），不拼；其他位置的软连字符直接去掉。
         if is_dash(scalar.ch) {
             let dashes = index
                 + unaccented[index..]
@@ -154,16 +155,13 @@ pub(super) fn fold(text: &str) -> Vec<Scalar> {
                     .iter()
                     .take_while(|item| item.ch == SOFT_HYPHEN)
                     .count();
-            let soft = unaccented[index..dashes]
-                .iter()
-                .any(|item| item.ch == SOFT_HYPHEN);
             if folded
                 .last()
                 .is_some_and(|prev: &Scalar| is_latin_letter(prev.ch))
                 && unaccented
                     .get(end)
                     .is_some_and(|next| is_latin_letter(next.ch))
-                && (dashes == gap || breaks == 1 || (soft && breaks == 0))
+                && (dashes == gap || breaks == 1)
             {
                 index = end;
                 continue;

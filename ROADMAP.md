@@ -1,6 +1,6 @@
 # ROADMAP
 
-现在：**v0.2.0 已发（tag `v0.2.0`）**。各引擎做工具包和 find 都钉这一版。分工见 `CLAUDE.md`「二」：Codex 实施，本机 Claude 审核、commit、打 tag。
+现在：**v0.2.1 已发（tag `v0.2.1`，只修 find 归一化）**。各引擎做工具包和 find 钉 v0.2.x。分工见 `CLAUDE.md`「二」：Codex 实施，本机 Claude 审核、commit、打 tag。
 
 ## 版本表
 
@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | v0.1.0 | 计划、设计稿、骨架 | 完成（没打 tag） |
 | v0.2.0 | 工具包骨架 + find | 完成（tag `v0.2.0`） |
+| v0.2.1 | 软连字符后跟空格不拼词（engine-pdf v0.7 审核时发现） | 完成（tag `v0.2.1`） |
 | v0.x | 各引擎用到时补 | 随用随加。已经有人提的：共用的文字编码识别（engine-txt、engine-excel 的 CSV）；按词找用比整句大的单元（engine-excel：整句按一格、按词按一行） |
 | v1.0.0 | 和 engine-pdf 1.0 同时冻结；之后只加不改（1.x） | 大纲 |
 
@@ -25,7 +26,7 @@
 
 | 引擎 | 用 engine-core 的哪一版 | 用在哪 |
 | --- | --- | --- |
-| engine-pdf | v0.2.0 起 | v0.7 工具包 + `pdf_find` |
+| engine-pdf | v0.2.1 起 | v0.7 工具包 + `pdf_find` |
 | engine-web | v0.2.0 起 | v0.2 的工具包和 `web_find` |
 | engine-word | v0.2.0 起 | v0.2 的工具包和 `word_find` |
 | engine-txt | v0.2.0 起 | v0.2 的工具包和 `txt_find` |
