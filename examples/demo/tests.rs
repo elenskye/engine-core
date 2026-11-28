@@ -6,7 +6,9 @@ use engine_core::{
         Zeroizing,
     },
     cli::{LocalHost, run_with},
-    tool::ToolSpec,
+    overrides::Override,
+    spend::Ledger,
+    tool::{Confirm, ToolSpec},
 };
 use serde_json::{Value, json};
 use std::{fs, io::Write};
@@ -234,4 +236,38 @@ fn cli_saves_attachments_without_overwriting() {
     );
     let reply: Value = serde_json::from_slice(&stdout).unwrap();
     assert_eq!(reply["error"]["kind"], "file");
+}
+
+#[test]
+fn cli_runs_cheap_paid_calls_and_asks_only_by_the_rule() {
+    let dir = tempfile::tempdir().unwrap();
+    let never = Override {
+        confirm: Some(Confirm::Never),
+        ..Override::default()
+    };
+    let toolkit = demo()
+        .with_overrides(&[("demo_meter".to_string(), never)].into())
+        .unwrap()
+        .with_ledger(Ledger::At(dir.path().into()));
+    let run = |units: u32| {
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let args = [
+            "call".to_string(),
+            "demo_meter".into(),
+            format!(r#"{{"units":{units}}}"#),
+        ];
+        let code = run_with(&toolkit, args, &mut out, &mut err);
+        (code, serde_json::from_slice::<Value>(&out).unwrap())
+    };
+    // $0.02：不用问，直接执行（没设 ENGINE_KEY_DEMO_KEY，所以到了 auth）
+    let (code, reply) = run(2);
+    assert_eq!((code, &reply["error"]["kind"]), (1, &json!("auth")));
+    // $0.6：超过单次，只报价、说明为什么，退出码 3
+    let (code, reply) = run(60);
+    assert_eq!(code, 3);
+    assert!(
+        reply["why"].as_str().unwrap().contains("超过 $0.5"),
+        "{reply}"
+    );
+    assert!(reply["hint"].as_str().unwrap().contains("--yes"));
 }

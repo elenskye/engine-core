@@ -1,15 +1,15 @@
 # engine-core
 
-personal-engine-studio 各引擎共用的小库（纯 Rust，macOS、Linux 都能用）：工具清单的格式、自检、覆盖和导出，按名字调用（报价、确认、结果校验），命令行骨架，统一 find 的归一化、查询和命中，取消；feature `encoding` 另有文字编码的识别（v0.3.0 起）。它自己没有工具，各引擎钉它的 tag 来做「给 Agent 的工具包」和 `<短名>_find`。
+personal-engine-studio 各引擎共用的小库（纯 Rust，macOS、Linux 都能用）：工具清单的格式、自检、覆盖和导出，按名字调用（报价、确认、结果校验），命令行骨架，统一 find 的归一化、查询和命中，取消，花钱的规矩和共用账本（`spend`，v0.4.0 起）；feature `encoding` 另有文字编码的识别（v0.3.0 起），feature `clean` 另有清理开发目录的 `engine-clean`（v0.4.0 起）。它自己没有工具，各引擎钉它的 tag 来做「给 Agent 的工具包」和 `<短名>_find`。
 
 ```toml
 [dependencies]
-engine-core = { git = "https://github.com/elenskye/engine-core", tag = "v0.3.0" }
+engine-core = { git = "https://github.com/elenskye/engine-core", tag = "v0.4.0" }
 # 要认文字编码（txt、CSV）的：
-# engine-core = { git = "https://github.com/elenskye/engine-core", tag = "v0.3.0", features = ["encoding"] }
+# engine-core = { git = "https://github.com/elenskye/engine-core", tag = "v0.4.0", features = ["encoding"] }
 ```
 
-升级改 tag，回退改回上一个。接法见 [CHANGELOG](CHANGELOG.md#v030)，接口见 [设计稿](docs/design.md)，照着抄的样子见 [examples/demo](examples/demo/main.rs)。
+升级改 tag，回退改回上一个。接法见 [CHANGELOG](CHANGELOG.md#v040)，接口见 [设计稿](docs/design.md)，照着抄的样子见 [examples/demo](examples/demo/main.rs)。
 
 ```rust
 use engine_core::find::{Finder, Query, Source};
@@ -25,10 +25,17 @@ assert_eq!(&page[hit.location.clone()], "認\n知");
 
 ```bash
 ./scripts/check.sh
-cargo check --locked --target aarch64-unknown-linux-gnu --all-targets --features encoding
+cargo check --locked --target aarch64-unknown-linux-gnu --all-targets --features encoding,clean
 cargo run --example demo -- tools
 cargo run --example demo -- call demo_find '{"file":"examples/demo/sample.txt","query":"認知模型"}'
 cargo run --example demo -- call demo_meter '{"units":2}'
 ```
 
-最后一条只报价（退出码 3）；加 `--yes` 并设 `ENGINE_KEY_DEMO_KEY=demo` 才模拟执行。规则见 [CLAUDE.md](CLAUDE.md)，现状见 [HANDOFF.md](HANDOFF.md)。
+最后一条只报价（退出码 3：`demo_meter` 的清单写了每次问）；加 `--yes` 并设 `ENGINE_KEY_DEMO_KEY=demo` 才模拟执行。
+
+清理磁盘（总仓库 GUIDE「五」「清理」）：
+
+```bash
+./scripts/clean.sh            # 列出能清的，不动手
+./scripts/clean.sh --round --yes
+```规则见 [CLAUDE.md](CLAUDE.md)，现状见 [HANDOFF.md](HANDOFF.md)。

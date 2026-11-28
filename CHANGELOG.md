@@ -2,6 +2,24 @@
 
 公共接口变化和各引擎的接入说明。发版以 Git tag 为准。
 
+## v0.4.0
+
+- **花钱的规矩 `spend`**（总仓库 `decisions/0011`，设计稿 §9）：`ASK_ABOVE_USD`、`DAY_LIMIT_USD`、`WINDOW`、`LEDGER_DIR_ENV`；`Ledger`（`Shared`、`At(底)`、`Off`）→ `book(引擎, 服务)` → `Book`（`record`、`record_usage`、`entries`、`spent`、`approval`）；`Entry`、`Why`。从 engine-pdf v0.8 搬来。
+- **`Toolkit` 照规矩问**：`with_ledger`、`ledger()`；`prepare` 先照账本判断，`Prepared::why()` 交回原因；清单和覆盖只能更严。
+- **`run` 要先同意**：要确认的 `Prepared` 得先 `approve()` 再 `run`，否则报 `denied`、不执行（原来 `run` 不管确认）。`call` 和命令行照旧，自己会 `approve`。
+- **命令行**：只在要确认时才要 `--yes`，交回的 JSON 多了 `why`（原来一切正金额都要 `--yes`）；没给 `--out` 时附件目录以 `engine-cli-` 开头。
+- **清理（feature `clean`）**（总仓库 `decisions/0013`，设计稿 §10）：`clean::{plan, plan_temp, apply, Tier, Kind, Action, Item, Plan, Options, size, human, rel}` 和命令行 `engine-clean`（`required-features = ["clean"]`，App 不用开）；`scripts/clean.sh` 各引擎照抄。
+- 别的接口不变。
+
+### 各引擎怎么接
+
+| 引擎 | 要做的 |
+| --- | --- |
+| 有计费工具的（engine-pdf、engine-web） | 设置里带 `ledger`、`app`，`Toolkit::new(…).with_ledger(同一份)`；服务客户端真花了钱时 `ledger.book(短名, 服务).record_usage(app, &usage)`，模拟的不记；清单里计费工具的确认用 `never`（规矩之外不另问）；命令行测试照新规矩改（小额不再退出码 3） |
+| 别的 | 改钉 `v0.4.0` 什么都不用改；命令行里免费工具照旧 |
+| App（先 `prepare`、弹卡片、再 `run` 的） | 用户同意后 `run(prepared.approve(), …)`；要不要问看 `needs_confirm()`，原因看 `why()` |
+| 全部 | `scripts/check.sh` 开头设 `ENGINE_LEDGER_DIR` 到临时目录；加 `scripts/clean.sh` 和开工钩子（总仓库 GUIDE「五」「清理」） |
+
 ## v0.3.0
 
 - **新加 `encoding`（feature `encoding`）**：文字编码的识别和解码，从 engine-txt v0.2 搬来（`decisions/0008`，设计稿 §8）。`decode(bytes, label)` → `Decoded { text, encoding, newline }`；`Encoding`、`DetectedBy`、`Newline`（JSON 同 engine-txt v0.2）；`DecodeError`（`NotText`、`UnknownEncoding`、`BadEncodingName`）；`declared`；再导出 `encoding_rs`。

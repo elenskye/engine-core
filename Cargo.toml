@@ -1,9 +1,9 @@
 [package]
 name = "engine-core"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 rust-version = "1.85"
-description = "personal-engine-studio 各引擎共用的小库：工具清单、调用、命令行骨架、find、取消"
+description = "personal-engine-studio 各引擎共用的小库：工具清单、调用、命令行骨架、find、取消、花钱的规矩、清理"
 repository = "https://github.com/elenskye/engine-core"
 license = "UNLICENSED"
 publish = false
@@ -11,6 +11,8 @@ publish = false
 [features]
 # 文字编码的识别和解码（src/encoding.rs）：engine-txt、engine-excel 的 CSV 用
 encoding = ["dep:chardetng", "dep:encoding_rs"]
+# 清理开发目录（src/clean.rs）和命令行 engine-clean：各引擎的 scripts/clean.sh 用，App 不用开
+clean = []
 
 [dependencies]
 chardetng = { version = "^1.0.0", optional = true }
@@ -22,6 +24,11 @@ unicode-general-category = "^1.1.0"
 unicode-normalization = "^0.1.26"
 unicode-script = "^0.5.9"
 zeroize = "^1.9.1"
+
+[[bin]]
+name = "engine-clean"
+path = "src/bin/engine-clean.rs"
+required-features = ["clean"]
 
 [[example]]
 name = "demo"

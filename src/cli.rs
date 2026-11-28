@@ -125,19 +125,21 @@ fn execute<S>(toolkit: &Toolkit<S>, args: &[OsString]) -> Result<Reply, ToolErro
             let cancel = Cancel::new();
             let ctx = host.ctx(&cancel);
             let prepared = toolkit.prepare(name, &params, &ctx)?;
-            // 命令行对一切正金额都要 --yes，不管清单的确认门槛。
-            let charged = prepared.quote().is_some_and(|quote| quote.usd > 0.0);
-            if (prepared.needs_confirm() || charged) && !yes {
+            // 照花钱的规矩和工具的确认方式：要问时只报价、说明为什么，加 --yes 才执行；不用问的直接执行。
+            if prepared.needs_confirm() && !yes {
+                let why = prepared.why().map(ToString::to_string);
+                let hint = match &why {
+                    Some(why) => format!("要先问用户：{why}用户同意了再加 --yes。"),
+                    None => "这个工具要先问用户：用户同意了再加 --yes。".to_owned(),
+                };
                 return Ok((
                     3,
-                    json!({
-                        "tool": name, "quote": prepared.quote(),
-                        "hint": "要确认：加 --yes 才会执行。",
-                    }),
+                    json!({"tool": name, "quote": prepared.quote(), "why": why, "hint": hint}),
                     None,
                 ));
             }
-            let output = toolkit.run(prepared, &ctx)?;
+            // 到这里：不用问，或者加了 --yes（用户同意了）
+            let output = toolkit.run(prepared.approve(), &ctx)?;
 
             let attachments = if output.attachments.is_empty() {
                 Vec::new()
@@ -170,7 +172,8 @@ fn execute<S>(toolkit: &Toolkit<S>, args: &[OsString]) -> Result<Reply, ToolErro
 }
 
 /// 本机宿主：命令行用，各引擎的测试也可以用。文件按本机路径只读；密钥从环境变量
-/// `ENGINE_KEY_<名字大写>` 取；`yes` 为真时一律同意确认。
+/// `ENGINE_KEY_<名字大写>` 取；`yes` 为真时一律同意确认。花钱的规矩照 `Toolkit` 的账本
+/// （默认所有 App 共用的那份，测试可以用 `ENGINE_LEDGER_DIR` 换底）。
 #[derive(Clone, Copy, Debug, Default)]
 pub struct LocalHost {
     pub yes: bool,
@@ -230,7 +233,11 @@ fn write_attachments(attachments: &[Attachment], out: Option<&Path>) -> io::Resu
         }
     }
 
-    let temporary = out.is_none().then(tempfile::tempdir).transpose()?;
+    // 留给调用者的临时目录带前缀，`engine-clean` 认得出、过一天清掉。
+    let temporary = out
+        .is_none()
+        .then(|| tempfile::Builder::new().prefix("engine-cli-").tempdir())
+        .transpose()?;
     let directory = match (&temporary, out) {
         (Some(temporary), _) => temporary.path().to_owned(),
         (_, Some(out)) => {

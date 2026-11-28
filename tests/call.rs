@@ -225,8 +225,14 @@ fn prepare_quotes_without_running_and_run_skips_the_question() {
     assert!(costly.needs_confirm());
     assert_eq!((counts.quotes.get(), counts.runs.get()), (2, 0));
 
-    // App 自己弹了确认、用户同意后直接执行同一份报价，不再问 ctx.approve。
-    let usage = toolkit.run(costly, &ctx).unwrap().usage.unwrap();
+    // 要确认的没 approve 就 run：denied，实现不跑（不同意就一个请求都不发）。
+    assert_eq!(
+        toolkit.run(costly.clone(), &ctx).unwrap_err().kind,
+        "denied"
+    );
+    assert_eq!(counts.runs.get(), 0);
+    // App 自己弹了确认、用户同意后 approve，执行同一份报价，不再问 ctx.approve。
+    let usage = toolkit.run(costly.approve(), &ctx).unwrap().usage.unwrap();
     assert_eq!((usage.units, usage.usd), (2.0, 0.02));
     assert!(host.asked.borrow().is_empty());
     assert_eq!((counts.quotes.get(), counts.runs.get()), (2, 1));
@@ -338,4 +344,81 @@ fn check_examples_reports_each_unmet_expectation() {
     assert!(lines[0].starts_with("demo_echo 示例 1：text 里没有「Bye」"));
     assert!(lines[1].starts_with("demo_echo 示例 2：data.text 预期 \"HI\""));
     assert_eq!(lines[2], "demo_echo 示例 3：预期错误 timeout，实际成功");
+}
+
+#[test]
+fn the_spend_rule_decides_and_confirm_can_only_be_stricter() {
+    use engine_core::spend::{Entry, Ledger, Why};
+    let dir = tempfile::tempdir().unwrap();
+    let ledger = Ledger::At(dir.path().into());
+    let counts = Counts::default();
+    // 清单写「不问」也照规矩：$0.6 超过单次，问
+    let toolkit = meter(Confirm::Never, &counts).with_ledger(ledger.clone());
+    let host = Host::default();
+    let ctx = Ctx {
+        cancel: &Cancel::new(),
+        keys: &host,
+        files: &host,
+        approve: &host,
+        prices: &Prices::default(),
+        progress: &|_| {},
+    };
+    let small = toolkit
+        .prepare("demo_meter", &json!({"units": 30}), &ctx)
+        .unwrap();
+    assert!(!small.needs_confirm() && small.why().is_none());
+    let big = toolkit
+        .prepare("demo_meter", &json!({"units": 60}), &ctx)
+        .unwrap();
+    assert!(big.needs_confirm());
+    assert!(matches!(big.why(), Some(Why::Over { .. })));
+
+    // 同一个引擎、同一个服务最近 24 小时快到 $5：小的也问；账本在 engine-demo/demo-ledger.jsonl
+    let book = ledger.book("demo", "demo");
+    assert_eq!(
+        book.path().unwrap(),
+        dir.path().join("engine-demo/demo-ledger.jsonl")
+    );
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    book.record(&Entry {
+        at: now,
+        app: "Pomelo".into(),
+        service: "demo".into(),
+        unit: "项".into(),
+        units: 490.0,
+        usd: 4.9,
+        estimated: false,
+    })
+    .unwrap();
+    let small = toolkit
+        .prepare("demo_meter", &json!({"units": 30}), &ctx)
+        .unwrap();
+    assert!(matches!(small.why(), Some(Why::Day { .. })));
+    assert_eq!(
+        toolkit
+            .call("demo_meter", &json!({"units": 30}), &ctx)
+            .unwrap_err()
+            .kind,
+        "denied"
+    );
+    // 不花钱的不问；Off 只按单次
+    let free = toolkit
+        .prepare("demo_meter", &json!({"units": 0}), &ctx)
+        .unwrap();
+    assert!(!free.needs_confirm());
+    let off = meter(Confirm::Never, &counts).with_ledger(Ledger::Off);
+    assert!(
+        !off.prepare("demo_meter", &json!({"units": 30}), &ctx)
+            .unwrap()
+            .needs_confirm()
+    );
+    // 清单更严的照清单：AboveUsd 0.015 时 $0.3 要问，但不是规矩要问的
+    let strict = meter(Confirm::AboveUsd { usd: 0.015 }, &counts).with_ledger(Ledger::Off);
+    let p = strict
+        .prepare("demo_meter", &json!({"units": 30}), &ctx)
+        .unwrap();
+    assert!(p.needs_confirm() && p.why().is_none());
 }

@@ -4,6 +4,7 @@ use crate::{
     cancel::{Cancel, Cancelled},
     overrides::{self, Overrides},
     schema,
+    spend::{Ledger, Why},
     tool::{Confirm, Cost, Expect, SpecError, ToolSpec, check_all},
 };
 use serde::{Deserialize, Serialize};
@@ -63,6 +64,7 @@ pub struct Toolkit<S> {
     state: S,
     manifest: Vec<ToolSpec>,
     handlers: BTreeMap<String, Handler<S>>,
+    ledger: Ledger,
 }
 
 impl<S> Toolkit<S> {
@@ -89,7 +91,19 @@ impl<S> Toolkit<S> {
             state,
             manifest,
             handlers,
+            ledger: Ledger::Shared,
         })
+    }
+
+    /// 花钱的规矩查哪份账本（`spend`）：默认所有 App 共用的；App 的开发版、测试换成 `At` 或 `Off`。
+    /// 引擎记账用的是自己状态里的那份，两边应当一样。
+    pub fn with_ledger(mut self, ledger: Ledger) -> Self {
+        self.ledger = ledger;
+        self
+    }
+
+    pub fn ledger(&self) -> &Ledger {
+        &self.ledger
     }
 
     /// 在交给 App 或 CLI 之前应用覆盖。
@@ -111,7 +125,7 @@ impl<S> Toolkit<S> {
                 return Err(ToolError::common("denied"));
             }
         }
-        self.run(prepared, ctx)
+        self.run(prepared.approve(), ctx)
     }
 
     /// 第一步：校验参数、补默认值、本地报价，判断要不要用户确认。不执行工具。
@@ -157,23 +171,37 @@ impl<S> Toolkit<S> {
             }
             _ => None,
         };
-        let confirm = match (spec.confirm, &quote) {
-            (_, Some(quote)) if quote.usd == 0.0 => false,
-            (Confirm::Always, _) => true,
-            (Confirm::AboveUsd { usd }, Some(quote)) => quote.usd > usd,
-            _ => false,
-        };
+        // 花钱的规矩（spend）：引擎按共用账本定；清单和 App 的确认方式只能在这之上更严。
+        let why = quote.as_ref().and_then(|quote| {
+            let engine = spec.name.split_once('_').map_or("", |(engine, _)| engine);
+            self.ledger
+                .book(engine, &quote.service)
+                .approval(Some(quote.usd))
+        });
+        let confirm = why.is_some()
+            || match (spec.confirm, &quote) {
+                (_, Some(quote)) if quote.usd == 0.0 => false,
+                (Confirm::Always, _) => true,
+                (Confirm::AboveUsd { usd }, Some(quote)) => quote.usd > usd,
+                _ => false,
+            };
         ctx.cancel.check()?;
         Ok(Prepared {
             tool: spec.name.clone(),
             args,
             quote,
             confirm,
+            why,
+            approved: false,
         })
     }
 
-    /// 第二步：执行准备好的调用。确认由调用方负责（`call` 会问 `ctx.approve`）。
+    /// 第二步：执行准备好的调用。要确认的（`needs_confirm`）得先 `approve()`（用户同意了），否则报 `denied`、
+    /// 什么都不做：不同意就一个请求都不发，由引擎保证。`call` 问过 `ctx.approve` 会自己 `approve`。
     pub fn run(&self, prepared: Prepared, ctx: &Ctx<'_>) -> Result<Output, ToolError> {
+        if prepared.confirm && !prepared.approved {
+            return Err(ToolError::common("denied"));
+        }
         ctx.cancel.check()?;
         let spec = self.spec(&prepared.tool)?;
         let run = self.handlers[&prepared.tool].run;
@@ -223,6 +251,8 @@ pub struct Prepared {
     args: Value,
     quote: Option<Quote>,
     confirm: bool,
+    why: Option<Why>,
+    approved: bool,
 }
 
 impl Prepared {
@@ -240,9 +270,21 @@ impl Prepared {
         self.quote.as_ref()
     }
 
-    /// 照工具的确认方式（或 App 的覆盖），这一次要不要先问用户。
+    /// 这一次要不要先问用户：花钱的规矩要问，或工具的确认方式（App 的覆盖）要问。
     pub fn needs_confirm(&self) -> bool {
         self.confirm
+    }
+
+    /// 花钱的规矩为什么要问（超过单次、算不出、超过 24 小时合计）；规矩不用问时为 `None`。
+    /// 问用户时把它和报价一起给用户看。
+    pub fn why(&self) -> Option<&Why> {
+        self.why.as_ref()
+    }
+
+    /// 用户同意了：App 弹过自己的卡片、用户点了「是」以后调，再交给 `Toolkit::run`。
+    pub fn approve(mut self) -> Self {
+        self.approved = true;
+        self
     }
 }
 

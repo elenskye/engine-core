@@ -53,8 +53,8 @@ toolkit.run(p, &ctx)?;                                  // 用户同意后执行
 ```
 
 - **`Ctx`**（每次调用会变的）：`cancel`、`keys`（`get(名字) -> Option<Zeroizing<String>>`）、`files`（`read(路径) -> 字节`；`local_path(路径)` 默认 `None`，要交给系统程序的先问它，App 在这里管权限，不许读就报 `file`）、`approve`（`ask(工具, 报价) -> bool`）、`prices`（App 改过的单价）、`progress`。User-Agent、代理这类每次都一样的设置放各引擎 `Toolkit` 的状态里，不进 `Ctx`。
-- **`prepare`**：查取消 → 按生效的清单校验参数、补默认值（不合格报 `bad_args`）→ 计费工具调本地 `count` 数单位，单价取 `Prices` 里同服务同单位的，否则用清单的 → 定要不要确认：报价为零不问；`always` 每次问（免费工具问时报价为 `None`）；`above_usd` 超过才问。交回 `Prepared`（工具名、补过默认值的参数、报价、要不要确认；字段只读）。
-- **`run`**：查取消 → 执行 → 按 `result_schema` 校验 `data`，不合格报 `internal` 并保留用量。确认由调用方负责。
+- **`prepare`**：查取消 → 按生效的清单校验参数、补默认值（不合格报 `bad_args`）→ 计费工具调本地 `count` 数单位，单价取 `Prices` 里同服务同单位的，否则用清单的 → 定要不要确认：先照花钱的规矩（§9，按 `Toolkit` 的账本），要问就问；再照清单（或 App 的覆盖）：报价为零不问，`always` 每次问（免费工具问时报价为 `None`），`above_usd` 超过才问——清单只能比规矩更严。交回 `Prepared`（工具名、补过默认值的参数、报价、要不要确认、规矩为什么要问；字段只读）。
+- **`run`**：要确认的（`needs_confirm`）没 `approve()` 就报 `denied`、不执行（v0.4.0 起：不同意就一个请求都不发，由引擎保证）→ 查取消 → 执行 → 按 `result_schema` 校验 `data`，不合格报 `internal` 并保留用量。App 先弹自己的卡片的：用户同意后 `prepared.approve()` 再 `run`；`call` 问过 `ctx.approve` 会自己 `approve`。
 - **错误** `ToolError { kind, message, hint, retry, usage }`。通用种类：`bad_args`、`denied`、`cancelled`、`unsupported`、`file`、`too_large`、`network`、`timeout`、`rate_limited`、`auth`、`quota`、`service`、`internal`，各带默认的说明、建议和能否重试。实现只交种类时用 `ToolError::of(种类)`，经 Toolkit 交出时照这个工具清单的 `errors`（或通用种类）补齐——说明只写在清单里一处；要具体的说明就用 `ToolError::new`。清单和通用种类里都没有的种类按 `internal` 的说明补。消息不带密钥、路径和服务原文。
 - **用量** `Usage { service, unit, units, usd, estimated }`：花了钱就填。成功随 `Output.usage`，失败随 `ToolError::with_usage`；请求发出后失败按估算记。`Quote::usage(estimated)` 照报价生成。
 - **结果** `Output { text, data, attachments, usage, next }`：`text` 是给模型的 Markdown（位置写清）；`data` 给 App 和界面；附件是 `Attachment { filename, mime_type, content }`，内容为 `Bytes` 或 `TempFile`（所有权随结果转移，释放即删）；`next` 是没交完时接着取的参数。
@@ -79,8 +79,8 @@ pub struct Override { description, defaults, limits, confirm, disabled }
 | `<引擎> tools` | 列出工具：名字、中文短名、费用、确认方式 |
 | `<引擎> describe <工具>` | 打印整份清单 |
 | `<引擎> call <工具> '<JSON>'` | 打印 `{text, data, usage, next}`，有附件另加 `attachments`（路径、类型） |
-| `--yes` | 同意执行。凡是正金额的报价、或要确认的，不加就只打 `{tool, quote, hint}`、退出码 3，不执行 |
-| `--out <目录>` | 附件存到这里，不覆盖同名文件；省略时存进新建的系统临时目录，留给调用者 |
+| `--yes` | 同意执行。要确认的（花钱的规矩要问，或清单 / 覆盖要问）不加就只打 `{tool, quote, why, hint}`、退出码 3，不执行；不用问的直接执行（v0.4.0 起；之前一切正金额都要 `--yes`） |
+| `--out <目录>` | 附件存到这里，不覆盖同名文件；省略时存进新建的系统临时目录（`engine-cli-` 开头，留给调用者，`engine-clean` 过一天清掉） |
 | `--json-only` | 标准输出只打 `data`，附件路径和用量打到标准错误 |
 
 文件按本机路径只读，密钥从环境变量 `ENGINE_KEY_<名字大写>` 取（`LocalHost`；各引擎测试也可以用它：`LocalHost { yes: true }.ctx(&cancel)`）。退出码：0 成功；1 工具出错；2 参数或命令不对；3 要确认没给 `--yes`。错误以 `{error}` JSON 打出。不起常驻进程。
@@ -155,3 +155,23 @@ engine_core::encoding::declared(&bytes);       // XML 开头、HTML meta 声明�
 - **出错**：`DecodeError::NotText`（二进制）、`UnknownEncoding`（自己认的解出来替换符超过 1% 或含 NUL）、`BadEncodingName`（指定的名字不认识）。指定的编码解不出的字照样交回，`replaced` 记着几个。各引擎映射成自己的错误种类。
 - `Encoding`、`DetectedBy`、`Newline` 的 JSON 和 engine-txt v0.2 的一样（engine-txt 改成再导出这几个类型）。
 - 测试：各种编码、没有 BOM 的 UTF-16 两种字节序、GBK / Big5 / Windows-1252 / Shift_JIS 不被当成 UTF-16、二进制、XML 声明、ISO-2022-JP、HZ、换行、给人看的写法（`src/encoding.rs`）；engine-txt 的编码测试照样过。
+
+## 9. 花钱的规矩（`spend`，v0.4.0）
+
+站主 2026-11-28 定（总仓库 `decisions/0011`），所有引擎、所有 App 一样。从 engine-pdf v0.8 的 `mathpix/spend.rs` 搬来、按服务分开。
+
+- **门槛**：`ASK_ABOVE_USD`（$0.5）、`DAY_LIMIT_USD`（$5）、`WINDOW`（往回滚动 24 小时）。`Book::approval(usd)`：算不出（`None`、负数、非有限）→ `Why::UnknownCost`；为零 → 不问；超过单次 → `Why::Over`；这个服务最近 24 小时所有 App 已花的加上这一次超过 $5 → `Why::Day { spent, usd }`。`Why` 的 `Display` 是给人看的一句中文。
+- **账本**：`Ledger`（`Shared` 默认、`At(底)`、`Off`）定放在哪；`ledger.book(引擎短名, 服务)` 交回一个服务的 `Book`，文件 `<底>/engine-<引擎>/<服务>-ledger.jsonl`（名字转小写，别的字换成 `-`）。`Shared` 的底是 `$ENGINE_LEDGER_DIR`，否则 `~/Library/Application Support`。一行一个 `Entry { at, app, service, unit, units, usd, estimated }`，追加整行写（几个 App 同时写不写坏），读时跳过坏行。`record_usage(app, &Usage)` 花了钱才记。`entries(起点)` 给 App 报告用。
+- **谁记**：引擎的服务客户端在真花了钱的那一刻记（Mathpix 拿到任务编号、Tavily 回了 200），模拟的服务不记。`Toolkit` 不记账，只判断。
+- **`Toolkit`**：`with_ledger(ledger)` 设账本（默认 `Shared`），`prepare` 对计费工具按 `ledger.book(工具名下划线前的短名, 报价的服务)` 判断，`Prepared::why()` 交回原因，`needs_confirm()` 是「规矩要问」或「清单要问」。所以覆盖把确认改成 `never` 也放不宽。
+- **测试**：各引擎 `check.sh` 设 `ENGINE_LEDGER_DIR` 到临时目录；单元测试用 `Ledger::At(临时目录)`。
+
+## 10. 清理（feature `clean`，`engine-clean`，v0.4.0）
+
+站主 2026-11-28 定（总仓库 `decisions/0013`）。开发用的工具，App 不开这个 feature。
+
+- **`clean::plan(引擎目录, 档, 设置)`** 只列不动：`Plan { root, items, notes }`，每项 `Item { path, kind, action, bytes }`。**`plan_temp`** 列系统临时目录里 `engine-` 开头、超过一天没动的。**`apply`** 照单动手：`Delete` 直接删，`Trash` 改名挪进 `~/.Trash/<引擎目录名>-<路径>-<时间>`。
+- **档**：`Start`（`target/` 超过上限整份，默认 3 GB，`ENGINE_TARGET_LIMIT_GB` 可改）、`Round`（`local/tmp/` 进废纸篓；`local/` 下的 `swift-cache`、`__pycache__`、`.pytest_cache`、`.build` 删）、`Release`（加 `local/runs/v<版本>/` 里有 tag 的进废纸篓，`target/` 里 `debug`、`tmp` 以外的删，`node_modules`、`web/node_modules`、`web/dist`、`samples/out`、`output/playwright`、`.playwright-cli` 删）、`All`（`Release` 加整个 `target/`）。
+- **安全**：`target/` 以外的每一项都要 `git check-ignore` 认是 Git 不收的；`target/` 有程序从里面跑着（`ps` 的命令行里有它的路径）就不清；`local/runs/` 下不是版本号的、没发版的只写进 `notes`。大小按占用的块算，硬链接只算一次。
+- **命令行** `engine-clean [--start|--round|--release|--all] [--yes] [--quiet] [<目录>…]`：不加档按 `--all`，不加 `--yes` 只列；给引擎总仓库就过每个 `engine-*/`。各引擎的 `scripts/clean.sh` 按需 `cargo install` 一份到 `~/.cargo/bin`（版本和本机 engine-core 对得上就不装）。
+
