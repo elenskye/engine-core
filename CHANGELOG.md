@@ -2,6 +2,11 @@
 
 公共接口变化和各引擎的接入说明。发版以 Git tag 为准。
 
+## v0.4.1
+
+- **`scripts/clean.sh` 按源码重装 `engine-clean`**：除了版本号，还比本机 engine-core 源码的指纹（记在 `~/.cargo/engine-clean.stamp`）。v0.4.0 只比版本号，开发中改了源码、版本号没变时会一直用旧的那份（v0.4.0 发版前修了「硬链接只算一次」，装着的却是修之前的，算多了约三成）。
+- 库的接口不变。各引擎把自己的 `scripts/clean.sh` 换成这一份。
+
 ## v0.4.0
 
 - **花钱的规矩 `spend`**（总仓库 `decisions/0011`，设计稿 §9）：`ASK_ABOVE_USD`、`DAY_LIMIT_USD`、`WINDOW`、`LEDGER_DIR_ENV`；`Ledger`（`Shared`、`At(底)`、`Off`）→ `book(引擎, 服务)` → `Book`（`record`、`record_usage`、`entries`、`spent`、`approval`）；`Entry`、`Why`。从 engine-pdf v0.8 搬来。

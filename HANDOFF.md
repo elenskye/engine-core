@@ -1,6 +1,6 @@
 # HANDOFF
 
-更新于 2026-11-28。**v0.4.0 已提交并打 tag `v0.4.0`**（本机 Claude，在总仓库的会话里做的；所有引擎都停着，站主让直接做、不等批；等站主 push）：花钱的规矩 `spend` 和清理程序（feature `clean`，命令行 `engine-clean`）。v0.3.0、v0.2.1 已推上 GitHub。
+更新于 2026-11-28。**v0.4.1 已提交并打 tag `v0.4.1`**（同日先发了 v0.4.0；本机 Claude，在总仓库的会话里做的；所有引擎都停着，站主让直接做、不等批；等站主 push）：花钱的规矩 `spend` 和清理程序（feature `clean`，命令行 `engine-clean`）。v0.4.1 只修 `scripts/clean.sh`：按版本和源码指纹重装 `engine-clean`（v0.4.0 只比版本号，装着的是修硬链接之前的那份，第一次列清单时算多了约三成）。v0.3.0、v0.2.1 已推上 GitHub。
 
 > 准则更新（2026-11-28）：「五」加了「花钱的规矩」（`decisions/0011`）和「清理」（`0013`），「三」加了「引擎带的大文件」（`0012`）；这两样共用的代码就是本版。11-27 的「改用到的引擎」（「二」末尾，`0009`）照旧。
 
@@ -27,9 +27,9 @@
 
 ## 等站主
 
-- push 提交和 tag：`git push origin main --tags`（在 `engine-core/` 里）。**最先推**：engine-pdf、engine-web、engine-txt、engine-excel 都等它，推上去后它们才能从本机路径换回 git tag。
+- push 提交和 tag（`v0.4.0`、`v0.4.1`）：`git push origin main --tags`（在 `engine-core/` 里）。**最先推**：engine-pdf、engine-web、engine-txt、engine-excel 都等它，推上去后它们才能从本机路径换回 git tag。
 - 第一次清理：列出的清单在总仓库会话里给站主看，点头后清。
 
 ## 下一步
 
-各引擎 tag 推上去以后把 `engine-core = { path = "../engine-core" … }` 换回 `{ git = …, tag = "v0.4.0" … }`（engine-pdf、engine-web、engine-txt、engine-excel 的 `Cargo.toml` 里都留了注释）。本库等它们提需求再出 v0.x。
+各引擎 tag 推上去以后把 `engine-core = { path = "../engine-core" … }` 换回 `{ git = …, tag = "v0.4.1" … }`（engine-pdf、engine-web、engine-txt、engine-excel 的 `Cargo.toml` 里都留了注释）。本库等它们提需求再出 v0.x。

@@ -1,6 +1,6 @@
 # ROADMAP
 
-现在：**v0.4.0 已发（tag `v0.4.0`，2026-11-28，等站主 push）**：花钱的规矩 `spend`、清理程序（feature `clean`）。engine-pdf、engine-web、engine-txt、engine-excel 都改钉了它（tag 推上去之前指本机路径）；要认文字编码的开 `encoding`。分工见 `CLAUDE.md`「二」：Codex 实施，本机 Claude 审核、commit、打 tag。
+现在：**v0.4.1 已发（tag `v0.4.1`，2026-11-28，等站主 push；v0.4.0 同日）**：花钱的规矩 `spend`、清理程序（feature `clean`）。engine-pdf、engine-web、engine-txt、engine-excel 都改钉了它（tag 推上去之前指本机路径）；要认文字编码的开 `encoding`。分工见 `CLAUDE.md`「二」：Codex 实施，本机 Claude 审核、commit、打 tag。
 
 ## 版本表
 
@@ -11,6 +11,7 @@
 | v0.2.1 | 软连字符后跟空格不拼词（engine-pdf v0.7 审核时发现） | 完成（tag `v0.2.1`） |
 | v0.3.0 | 文字编码的识别（feature `encoding`，从 engine-txt 搬来；engine-excel v0.2 Phase 4 提，站主 2026-11-28 定，`decisions/0008`） | 完成（tag `v0.3.0`） |
 | v0.4.0 | 共用的花钱规矩（`spend`）+ 清理程序（feature `clean`，`engine-clean`）（站主 2026-11-28 定，总仓库 `decisions/0011`、`0013`） | 完成（tag `v0.4.0`） |
+| v0.4.1 | `scripts/clean.sh` 按版本和源码指纹重装 `engine-clean`（原来只比版本号） | 完成（tag `v0.4.1`） |
 | v0.x | 各引擎用到时补 | 随用随加。已经有人提的：按词找用比整句大的单元（engine-excel：整句按一格、按词按一行） |
 | v1.0.0 | 和 engine-pdf 1.0 同时冻结；之后只加不改（1.x） | 大纲 |
 
