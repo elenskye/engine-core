@@ -10,6 +10,7 @@
 | v0.2.0 | 工具包骨架 + find | 完成（tag `v0.2.0`） |
 | v0.2.1 | 软连字符后跟空格不拼词（engine-pdf v0.7 审核时发现） | 完成（tag `v0.2.1`） |
 | v0.3.0 | 文字编码的识别（feature `encoding`，从 engine-txt 搬来；engine-excel v0.2 Phase 4 提，站主 2026-11-28 定，`decisions/0008`） | 完成（tag `v0.3.0`） |
+| v0.4.0 | 共用的花钱规矩（站主 2026-11-28 定，`CLAUDE.md`「五」，总仓库 `decisions/0011`）：一次超过 $0.5 或算不出、这个服务 24 小时合计超过 $5 才问；按服务分开的共用账本（JSON Lines，所有 App 共用，App 从这里取）；问的原因交给 App 和命令行。`prepare` 和命令行照门槛走（现在命令行一切正金额都要 `--yes`），`Confirm` 的覆盖只能改严。从 engine-pdf v0.8 的 `src/mathpix/spend.rs` 搬，engine-pdf、engine-web 改用它 | 大纲，开工前写 Phase 计划 |
 | v0.x | 各引擎用到时补 | 随用随加。已经有人提的：按词找用比整句大的单元（engine-excel：整句按一格、按词按一行） |
 | v1.0.0 | 和 engine-pdf 1.0 同时冻结；之后只加不改（1.x） | 大纲 |
 
