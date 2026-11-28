@@ -1,6 +1,6 @@
 [package]
 name = "engine-core"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.85"
 description = "personal-engine-studio 各引擎共用的小库：工具清单、调用、命令行骨架、find、取消"
@@ -8,7 +8,13 @@ repository = "https://github.com/elenskye/engine-core"
 license = "UNLICENSED"
 publish = false
 
+[features]
+# 文字编码的识别和解码（src/encoding.rs）：engine-txt、engine-excel 的 CSV 用
+encoding = ["dep:chardetng", "dep:encoding_rs"]
+
 [dependencies]
+chardetng = { version = "^1.0.0", optional = true }
+encoding_rs = { version = "^0.8.35", optional = true }
 serde = { version = "^1.0.229", features = ["derive"] }
 serde_json = "^1.0.154"
 tempfile = "^3.27.0"

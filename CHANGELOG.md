@@ -2,6 +2,19 @@
 
 公共接口变化和各引擎的接入说明。发版以 Git tag 为准。
 
+## v0.3.0
+
+- **新加 `encoding`（feature `encoding`）**：文字编码的识别和解码，从 engine-txt v0.2 搬来（`decisions/0008`，设计稿 §8）。`decode(bytes, label)` → `Decoded { text, encoding, newline }`；`Encoding`、`DetectedBy`、`Newline`（JSON 同 engine-txt v0.2）；`DecodeError`（`NotText`、`UnknownEncoding`、`BadEncodingName`）；`declared`；再导出 `encoding_rs`。
+- 别的接口不变；不开 `encoding` 的引擎改钉 `v0.3.0` 什么都不用改。
+
+### 各引擎怎么接
+
+| 引擎 | 要做的 |
+| --- | --- |
+| engine-excel | v0.2 Phase 4：`engine-core = { git = …, tag = "v0.3.0", features = ["encoding"] }`，CSV 用 `decode`，`DecodeError` 映射到 `not_spreadsheet` / `unknown_encoding` / 编码名错 |
+| engine-txt | v0.3.0：开 `encoding`；`Encoding`、`DetectedBy`、`Newline`、`Decoded` 改成 `pub use engine_core::encoding::…`；`decode` 只留把 `DecodeError` 换成自己 `Error` 的一层；EPUB 用 `engine_core::encoding::declared` |
+| 别的 | 不用改 |
+
 ## v0.2.1
 
 - **find 归一化修正**：软连字符后跟空格（没有换行）不再当行尾断词拼起来。原来 `all\u{ad} observations`、`between-\u{ad} and` 会被拼成一个词，整句、按词都找不到。接口不变，各引擎改钉 `v0.2.1` 即可。

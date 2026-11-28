@@ -9,7 +9,8 @@ engine_core
 ├── overrides  App 按工具名覆盖；导出成 Anthropic、OpenAI 的工具格式
 ├── cli        命令行骨架 run / run_with；LocalHost（本机文件、环境变量密钥）
 ├── find       normalize、Query、Finder、Hit<L>、Found<L>
-└── cancel     Cancel、Cancelled（根上也导出）
+├── cancel     Cancel、Cancelled（根上也导出）
+└── encoding   feature `encoding`：decode、Decoded、Encoding、DetectedBy、Newline、DecodeError、declared（v0.3.0）
 ```
 
 引用：`engine-core = { git = "https://github.com/elenskye/engine-core", tag = "v0.2.0" }`。示范引擎 `examples/demo`（四个工具：免费、本机、查找、计费）把全流程走一遍，接新引擎照它抄。
@@ -135,3 +136,22 @@ let found: Found<Loc> = finder.finish();   // serde_json::to_value(&found) 就�
 - 纯 Rust，macOS、Linux 都要编译和测试（`cargo check --target aarch64-unknown-linux-gnu --all-targets`）。不引 HTTP、异步运行时、Mac 框架。依赖见 `THIRD_PARTY.md`，简繁表见 `decisions/0006`。
 - 自动测：清单自检、参数、覆盖、导出、调用流程（`tests/`）；demo 的例子和命令行（`examples/demo/tests.rs`，`run_with` 比对 JSON）；归一化正反例和映射；find 的整句、按词、简繁、断词、中文换行、全角，含 engine-pdf 样本和真实论文的短片段（`tests/fixtures/find/`）。
 - 真实文件批量核对（不进 Git）：用 engine-pdf 取 38 份真实论文和杂志、8 页扫描件（OCR）的每页文字，从原文随机截片段，按原样和「模型照着打」的写法去找，看能否在原处整句命中。结果记在 `HANDOFF.md`。
+
+## 8. 文字编码（feature `encoding`，v0.3.0）
+
+engine-txt 的 txt、Markdown、字幕和 engine-excel 的 CSV 都要从字节认编码，一份放在这里（`decisions/0008`）。要用的引擎开 `features = ["encoding"]`，不用的不带 `encoding_rs`、`chardetng`。
+
+```rust
+use engine_core::encoding::{decode, Decoded, DecodeError};
+
+let d: Decoded = decode(&bytes, None)?;        // 或 Some("gbk")：WHATWG 的编码名，另认 HZ-GB-2312
+d.text;                                        // 统一成 \n、去掉开头的 BOM，别的一个字不改
+d.encoding;                                    // Encoding { name, by: DetectedBy, bom, replaced }；.label() 给人看
+d.newline;                                     // Option<Newline>：原文用的换行
+engine_core::encoding::declared(&bytes);       // XML 开头、HTML meta 声明的编码（EPUB 正文用）
+```
+
+- **顺序**：指定 → BOM → 没有 BOM 的 UTF-16（看换行、空格、英文、常见中文标点这些「锚点」）→ 二进制（前 16 KB 里 NUL 超过 1%）→ 合法 UTF-8（7 位、带 ESC 的认 ISO-2022-JP，带 `~{` 的认 HZ）→ XML 声明的 → chardetng 猜（喂前 1 MB）。
+- **出错**：`DecodeError::NotText`（二进制）、`UnknownEncoding`（自己认的解出来替换符超过 1% 或含 NUL）、`BadEncodingName`（指定的名字不认识）。指定的编码解不出的字照样交回，`replaced` 记着几个。各引擎映射成自己的错误种类。
+- `Encoding`、`DetectedBy`、`Newline` 的 JSON 和 engine-txt v0.2 的一样（engine-txt 改成再导出这几个类型）。
+- 测试：各种编码、没有 BOM 的 UTF-16 两种字节序、GBK / Big5 / Windows-1252 / Shift_JIS 不被当成 UTF-16、二进制、XML 声明、ISO-2022-JP、HZ、换行、给人看的写法（`src/encoding.rs`）；engine-txt 的编码测试照样过。

@@ -12,3 +12,5 @@
 | `unicode-script` | `^0.5.9` | MIT OR Apache-2.0 | 汉字和拉丁字母的脚本识别 | [crate](https://crates.io/crates/unicode-script) |
 | `zeroize` | `^1.9.1` | Apache-2.0 OR MIT | 清零调用期间用到的密钥 | [crate](https://crates.io/crates/zeroize) |
 | OpenCC `TSCharacters.txt` | `ver.1.1.9` | Apache-2.0 | 离线逐字简繁折叠，许可证随 `src/find/data/` 保存 | [原表](https://github.com/BYVoid/OpenCC/blob/ver.1.1.9/data/dictionary/TSCharacters.txt) |
+| `encoding_rs` | `^0.8.35`（可选，feature `encoding`） | (Apache-2.0 OR MIT) AND BSD-3-Clause | 认 BOM、解 GBK / GB18030、Big5、UTF-16、Shift_JIS 等 | [crate](https://crates.io/crates/encoding_rs) |
+| `chardetng` | `^1.0.0`（可选，feature `encoding`） | Apache-2.0 OR MIT | 没有 BOM、不是 UTF-8 时猜编码 | [crate](https://crates.io/crates/chardetng) |
